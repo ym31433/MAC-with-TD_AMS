@@ -45,12 +45,50 @@ endmodule
 
 
 
+module tdc_8b(rst, clk, in, out);
+input  rst, clk, in;
+output [7:0] out;
+
+wire [6:0] inner_clk, inner_in;
+integer i;
+
+parameter T_DEL = `DEL_UNIT;
+
+for(i = 7; i >=0; i = i-1) begin
+	defparam BIT[i].T_DEL = T_DEL;
+end
+
+tdc_1b BIT[7](.rst(rst), .clk(clk), .in(in), .out(out[7]));
+for(i = 6; i >= 0, i = i-1) begin //7
+	tdc_1b BIT[i] (.rst(rst), .clk(inner_clk[i]), .in(inner_in[i]), .out(out[i]));
+end
+
+for(i = (1<<6); i >= 1; i = (i>>1)) begin //7
+	defparam CAS[i].T_DEL = i*`DEL_UNIT;
+end
+
+tdc_cascade CAS[6](.in(in), .clk(clk), .data(out[7]), .in_out(inner_in[6]), .clk_out(inner_clk[6]));
+for(i = 5; i >= 0, i = i-1) begin //6
+	tdc_cascade CAS[i](.in(inner_in[i+1]), .clk(inner_clk[i+1]), .data(out[i+1]),
+		.in_out(inner_in[i]), .clk_out(inner_clk[i]));
+end
+
+endmodule
+
+
+
 module tdc_32b(rst, clk, in, out);
 input  rst, clk, in;
 output [31:0] out;
 
 wire [30:0] inner_clk, inner_in;
 integer i;
+
+parameter T_DEL = `DEL_UNIT;
+
+for(i = 31; i >=0; i = i-1) begin
+	defparam BIT[i].T_DEL = T_DEL;
+end
 
 tdc_1b BIT[31](.rst(rst), .clk(clk), .in(in), .out(out[31]));
 for(i = 30; i >= 0, i = i-1) begin //31
